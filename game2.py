@@ -1,6 +1,43 @@
 import random
 import time
 
+cheat = False
+current_user = None
+
+def login():
+    global current_user
+    while True:
+        username = input("Username: ")
+        password = input("Password: ")
+        if username == "admin" and password == "admin":
+            # Enable cheat mode
+            global cheat
+            cheat = True
+            current_user = "admin"
+            print("Cheat mode enabled.")
+            break
+        elif username == "tommy" and password == "apple":
+            # Enable high score record mode
+            current_user = "guest"
+            print("Logged in as guest.")
+            break
+        else:
+            print("Invalid username or password. Please try again.")
+            break
+
+def logout():
+    global cheat
+    global current_user
+    cheat = False
+    current_user = None
+    print("Logged out successfully.")
+
+def record_game(round_number, time_taken):
+    # Add the number of turns and time taken to a list
+    with open("game_records.txt", "a") as file:
+        file.write(f"Round: {round_number}, Time: {time_taken} seconds\n")
+    print("Game record saved.")
+
 # Start the timer and return the start time
 def start_timer(duration):
     start_time = time.time()
@@ -83,7 +120,8 @@ def play_game():
     attempts = 0
     guess_history = []
     start_time = start_timer(DIFFICULTY_LEVELS[difficulty]['TIME_LIMIT'])
-
+    if cheat:
+            print(f"The secret code is: {secret_code}")
     while attempts < DIFFICULTY_LEVELS[difficulty]['MAX_ATTEMPTS'] and not check_time_limit(start_time, DIFFICULTY_LEVELS[difficulty]['TIME_LIMIT']):
         guess = get_player_guess(DIFFICULTY_LEVELS[difficulty]['NUM_COLORS'])
         
@@ -91,14 +129,14 @@ def play_game():
         if guess == ['EXIT']:
             print("Exiting the game...")
             return
-
+        
         black_pins, white_pins = evaluate_guess(secret_code, guess)
         guess_history.append((attempts + 1, ''.join(guess), black_pins, white_pins))
         
         print(f"Your guess: {''.join(guess)}")
         print(f"Feedback: {black_pins} black pin(s), {white_pins} white pin(s)")
-        print(f"Time remaining: {int(time_remaining(start_time, DIFFICULTY_LEVELS[difficulty]['TIME_LIMIT']))} seconds")
-
+        if not(cheat):
+            print(f"Time remaining: {int(time_remaining(start_time, DIFFICULTY_LEVELS[difficulty]['TIME_LIMIT']))} seconds")
         display_guess_history(guess_history)
 
         if black_pins == DIFFICULTY_LEVELS[difficulty]['NUM_COLORS']:
@@ -116,25 +154,27 @@ def play_game():
 
 # Choose the game difficulty level
 def choose_difficulty():
-    while True:
-        print("Select the difficulty level:")
-        print("1. Beginner")
-        print("2. Normal")
-        print("3. Expert")
-        print("4. Cheat")
+    if current_user == "admin":
+        return "CHEAT"
+    else:
+        while True:
+            print("Select the difficulty level:")
+            print("1. Beginner")
+            print("2. Normal")
+            print("3. Expert")
 
-        choice = input("Enter your choice (1-4): ")
+            choice = input("Enter your choice (1-3): ")
 
-        if choice == '1':
-            return 'BEGINNER'
-        elif choice == '2':
-            return 'NORMAL'
-        elif choice == '3':
-            return 'EXPERT'
-        elif choice == '4':
-            return 'CHEAT'
-        else:
-            print("Invalid input. Please try again.")
+            if choice == '1':
+                return 'BEGINNER'
+            elif choice == '2':
+                return 'NORMAL'
+            elif choice == '3':
+                return 'EXPERT'
+            elif cheat == True:
+                return 'CHEAT'
+            else:
+                print("Invalid input. Please try again.")
 
 # Display the guess history table
 def display_guess_history(guess_history):
@@ -144,28 +184,6 @@ def display_guess_history(guess_history):
     for round_num, guess, black_pins, white_pins in guess_history:
         print(f"{round_num:5} | {guess:5} | {black_pins:10} | {white_pins:10} |")
     print()
-
-# Main function to run the Mastermind game
-def main():
-    while True:
-        print('''
-    Welcome to the Mastermind game!
-    - Start Game (1)
-    - Game Rules (2)
-    - Exit Game (3)
-          ''')
-
-        user_input = input("Please enter (1-3): ")
-
-        if user_input == '1':
-            play_game()
-        elif user_input == '2':
-            print_game_rules()
-        elif user_input == '3':
-            print("Goodbye!")
-            break
-        else:
-            print("Invalid input. Please try again.")
 
 def print_game_rules():
     print('''
@@ -186,14 +204,41 @@ def print_game_rules():
     - You have a maximum of 6 attempts to guess the secret code.
     - You have a maximum of 1 minute to guess the secret code.
 
-    Cheat:
-    - The secret code is revealed to you(for testing).
-    - You have an unlimited number of attempts and no time limit.
-
     After each guess, you will receive immediate feedback using black and white hint beads:
     - A black bead indicates that a color in the player's guess is correct and in the correct position.
     - A white bead indicates that a color in the player's guess is correct but in the wrong position.
+    
+    Press Enter to continue...
     ''')
+    input()
+
+# Main function to run the Mastermind game
+def main():
+    while True:
+        print('''
+    Welcome to the Mastermind game!
+    - Log in/out (1)
+    - Play Game (2)
+    - Game Rules (3)
+    - Exit Game (4)
+          ''')
+
+        user_input = input("Please enter (1-4): ")
+
+        if user_input == '1':
+            if current_user == None:
+                login()
+            else:
+                logout()
+        elif user_input == '2':
+            play_game()
+        elif user_input == '3':
+            print_game_rules()
+        elif user_input == '4':
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid input. Please try again.")
 
 if __name__ == "__main__":
     main()
